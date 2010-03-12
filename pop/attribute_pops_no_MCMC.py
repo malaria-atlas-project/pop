@@ -6,8 +6,6 @@ from numpy import pi, log, where, hstack, exp
 import pylab as pl
 import matplotlib
 import pymc as pm
-from pointprocess import *
-from pp_step_methods import *
 from mpl_toolkits import basemap
 from matplotlib.nxutils import points_inside_poly
 import os
