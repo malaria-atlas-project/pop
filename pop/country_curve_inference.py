@@ -15,12 +15,6 @@
 
 #!/usr/bin/env python
 # encoding: utf-8
-"""
-country_curve_inference.py
-
-Created by Anand Patil on 2008-11-25.
-Copyright (c) 2008. All rights reserved.
-"""
 
 import pymc as pm
 import numpy as np

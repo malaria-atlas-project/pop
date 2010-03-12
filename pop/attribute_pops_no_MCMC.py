@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import division
-from attribute_pops import *
+# from attribute_pops import *
 import tables as tb
 import numpy as np
 from numpy import pi, log, where, hstack, exp
@@ -26,7 +26,7 @@ from matplotlib.nxutils import points_inside_poly
 import os
 import scipy
 from scipy import integrate
-from log_sum import log_sum
+from pymc.flib import logsum as log_sum
 import sys
 
 I = np.complex(0,1)
