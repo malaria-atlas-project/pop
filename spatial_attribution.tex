@@ -1,0 +1,144 @@
+\documentclass[a4paper]{article}
+\usepackage{fullpage}
+\usepackage{epsfig}
+\usepackage{pdfsync}
+\usepackage{amsfonts}
+\begin{document}
+
+\author{Andy, Anand, Pete, Simon, Bob}
+\title{Incorporating uncertainty in spatial attribution: materials and methods section}
+\maketitle
+
+In this paper we focus on refining GRUMP's procedure for distributing the rural population. In particular, we try to estimate our uncertainty around the median population density surface. Refining and quantifying the uncertainty of the urban extents is an important topic \textbf{cite someone on light spillover}, but we leave it for future research.
+
+The following sections address a particular level 2 administrative unit $A$. First, we define some common notation:
+\begin{itemize}
+	\item $x$: An arbitrary point in $A$.
+	\item $h(x)$: The elevation at point $x$.
+	\item $k_l(x)$: The $l$-kilometer pixel containing $x$.
+	\item $r$: An arbitrary region in $A$.
+	\item $K(l,r)_i$: The $i$'th pixel in set of $l$-kilometer pixels that covers $r$.	
+	\item $n(r)$ The population of $r$.
+	\item $U_i$: An arbitrary urban extent in $A$.
+	\item $U$: The union of all the urban extents in $A$.
+\end{itemize}
+We make use of the basic theory of spatial point processes. Readers requiring background information are referred to Waagepetersen and M{\o}ller \textbf{cite W\&M}.
+
+\section{Attribution based on ignorance}
+It is tempting to try to attribute population in rural areas based on a model that does not seem to prefer one candidate attribution over another. However, several plausible yet incompatible definitions of ignorance are possible, and each of them has its individual problems.
+
+\bigskip
+Since our goal is to produce a GIS layer, the most obvious definition of ignorance is that given the population of $A$ any population raster at $l$-kilometer resolution over $A$'s rural areas is equally likely, that is
+\begin{equation}
+	\{n(K(l,A\setminus U)_i)\}|n(A\setminus U)\ \sim\ n(A\setminus U)\textup {Dirichlet}(\{1,\ldots,1\}).
+\end{equation}
+It follows that \textbf{cite Hogg and Craig and Wikipedia}
+\begin{equation}
+	\{n(K(2l,A\setminus U)_i)\}|n(A\setminus U)\ \dot\sim\ n(A\setminus U)\textup {Dirichlet}(\{4,\ldots,4\}),
+\end{equation}
+where the distribution is approximate because $2l$-kilometer pixels near the edges of $A\setminus U$ may not contain four $l$-kilometer pixels. We see that indifference at one resolution implies a preference at other resolutions. It seems strange to define ignorance of global population density in a way that depends on the output raster.
+
+\bigskip
+Another possibility is to assume that individuals distribute themselves over $A\setminus U$ as a binomial process, or in other words that each individual chooses his or her location at random in rural areas. This is not equivalent to equal likelihood of all population rasters at any resolution in any case of practical interest, and on closer inspection it is difficult to justify applying the label `ignorance' to this model at all. 
+
+Consider the example of level-2 administrative unit \textbf{some unit} in \textbf{some country}. The smallest urban extent considered explicitly by GRUMP is \textbf{some city}, which has population \textbf{blah}. However, the village \textbf{some village}, which has population \textbf{blah}, is known to be within \textbf{the admin unit}. Since it is small enough to fit within a five-kilometer pixel, we know that at least one pixel should have a population as large as \textbf{blah}. However, under the binomial process model, the probability of this event is \textbf{some really small number}. Far from representing ignorance, the binomial process model effectively rules out the large population clusters that are known to exist.
+
+\section{A settlement-based attribution model}
+We develop a simple rural attribution model that captures the clustering tendencies of human population distributions. Briefly, we assume that all people, even in rural areas, live in settlements of various sizes. We assume that the sizes of settlements within each region (\textbf{list of regions or cite appendix}) follow a typical distribution, which is inferred from a detailed settlement-level census in a subregion. Since elevation is known to be a good predictor of human population density \textbf{cite hypsographic demography}, we also infer the propensity of settlements to occur at different elevations. We assume that \emph{settlements} rather than individuals distribute themselves according to that propensity over $A\setminus U$.
+
+Formally, we model settlement locations and sizes as a marked Poisson process \textbf{cite W\&M}. We define some additional notation specific to this model:
+\begin{itemize}
+	\item $s_j$: The location of settlement $j$.
+	\item $n(s_j)$: The population of settlement $j$.
+	\item $\phi(x)=f(h(x))$: The intensity of the Poisson process at $x$.
+	\item $\phi(r)=\int_r f(h(x))dr$: The rate of settlement occurrence within $r$.
+\end{itemize}
+In the absence of the GRUMP urban extents or any information about the overall population of $A$, the `prior' model is simply
+\begin{equation}
+	\label{eq:base_model}
+	\begin{array}{r}
+		n(s_j) \stackrel{\textup{\tiny iid}}{\sim} \textup{Lognormal}(\mu, V)\\\\
+		s \sim \textup{PoissonProcess}(\phi).
+	\end{array}
+\end{equation}
+As observed by \textbf{cite the city size paper}, the lognormal distribution is a reasonable model for human settlement sizes. The parameters $\mu$ and $V$ are inferred within the region containing $A$ using standard statistical methods based on detailed settlement-level censuses in other areas in $A$ (\textbf{see appendix}).
+
+As described in \textbf{the section on the time-series stuff}, we assign a lognormal distribution to the overall population of $A$. \textbf{Something about truncating to make sure there's enough population for the urban extents, if we use the urban extents.} We force the marginal distribution of $n(A)$ to match this distribution by conditioning, then mixing the conditional distribution against the target distribution for $n(A)$:
+\begin{equation}
+	\label{eq:cond_on_fullpop}
+	\begin{array}{r}
+		\{s_j,n(s_j)\}|n(A) \sim \mathbf{1}\left[\sum_j n(s_j)=n(A)\right]\textup{PoissonProcess}
+		\left(\frac{\phi\times\textup{\small Lognormal}(\mu,V)}{p\left(\sum_j n(s_j)=n(A)\right)}\right)\\\\
+		n(A) \sim \textup{Lognormal}(\mu_A, V_A).
+	\end{array}
+\end{equation}
+
+To incorporate the GRUMP urban extents, we condition on two events. First, the urban extents describe all settlements in $U$, so all remaining settlements in $A$ must be in $A\setminus U$. Second, we assume every settlement in $A\setminus U$ is smaller than the smallest settlement in $U$, because otherwise it would have been included as an urban extent. The `posterior' model becomes
+\begin{equation}
+	\label{eq:cond_on_grump} 
+	\begin{array}{r}
+		\{s_j,n(s_j)\}|n(A\setminus U) \sim \mathbf{1}\left[\sum_j n(s_j)=n(A\setminus U)\right]\textup{PoissonProcess}
+		\left(\frac{\psi}{p\left(\sum_j n(s_j)=n(A\setminus U)\right)}\right)\\\\
+		\psi(x,n)=\phi(x)\textup{Lognormal}(n;\mu,V)\mathbf{1}[n<\min_in(U_i)]\\\\
+		n(A\setminus U) = n(A) - n(U)\\\\
+		n(A) \sim \textup{Lognormal}(\mu_A, V_A).
+	\end{array}
+\end{equation}
+Assuming that settlements smaller than the GRUMP urban extents will tend to fit in a 5km pixel, each sample from the joint distribution of $s_j$ and $n(s_j)$ conditional on $n(A\setminus U)$ can be easily converted to a sample from the distribution of the population raster in $A\setminus U$ given $n(A\setminus U)$. Many such samples can be summarized in various ways to produce the maps in section \textbf{results section}.
+
+\section{Sampling from the target distribution}
+Our strategy for generating a single sample from the target distribution $\{s_j,n(s_j)\}|n(A\setminus U)$ can be broken down into the following steps:
+\begin{enumerate}
+	\item Sample a value for $n(A)$ from its distribution, $\textup{Lognormal}(\mu_A, V_A)$. Compute $n(A\setminus U)$.
+	\item Given the sampled value for $n(A\setminus U)$, compute the distribution of the number of rural settlements $|s|$ conditional on that value and draw a sample from it.
+	\item Given the sampled values of $|s|$ and $n(A\setminus U)$, draw a value for the vector $\{n(s_j)\}$.
+	\item Given the sampled value of $|s|$, draw a value for the locations $\{s_j\}$.
+\end{enumerate}
+Step 1 simply requires generating a draw from the lognormal distribution and subtracting $n(U)$ from it. Step 4 is quite straightforward as well; given $|s|$, the locations $\{s_j\}$ are a binomial process with intensity $\phi$ \textbf{cite W\&M}. Steps 2 and 3 are more involved, and are described in the following sections.
+
+\subsection{Sampling the number of rural settlements given the total rural population}
+The distribution of the number of rural settlements $|s|$ given the total rural population $n(A\setminus U)$ can be computed using the definition of conditional probability:
+\begin{equation}
+	p(|s|\mid n(A\setminus U)) \propto p(n(A\setminus U)\mid|s|))p(|s|).
+\end{equation}
+The unconditional distribution $p(|s|)$ of the number of rural settlements can be computed using standard properties of Poisson processes \textbf{cite W\&M}:
+\begin{equation}
+	\begin{array}{r}
+		|s|\sim \textup{Poisson}(\phi(A\setminus U)p(n<\min_i n(U_i))),\\\\
+		n\sim \textup{Lognormal}(\mu, V).
+	\end{array}
+\end{equation}
+The likelihood $p(n(A\setminus U)\mid|s|))$ has to be computed by conditioning model (\ref{eq:base_model}) on the event that all settlements in $A\setminus U$ are smaller than the smallest settlement in $U$. Given values for $\{s_j\}$ in model (\ref{eq:base_model}), the settlement sizes $\{n(s_j)\}$ are iid and lognormally distributed. Conditioning on their sizes being smaller than $\min_i n(U_i)$, they are still iid, but have a nonstandard `truncated lognormal' distribution TLN$(\mu,V,\min_i n(U_i))$. The rural population $n(A\setminus U)$ is therefore the sum of iid random variables with a nonstandard distribution. Its distribution can be computed in several ways:
+\begin{itemize}
+	\item If $|s|$ is relatively small, direct simulation is efficient. Many samples from $\{n(s_j)\}$ can be generated by rejection sampling from TLN$(\mu,V,\min_i n(U_i))$ using $\textup{Lognormal}(\mu,V)$ as a proposal distribution \textbf{cite Gelman}, and $|s|$-sized groups of these can be summed to build up an empirical distribution for $n(A\setminus U)\mid |s|$.
+	\item If $|s|$ is large, the central limit theorem can be applied. $n(A\setminus U)\mid |s|$ is approximately normally distributed with mean $|s|E[n(s_j)]$ and variance $|s|V[n(s_j)]$. The mean and variance of $n(s_j)$ can be estimated by simulation.
+	\item If $|s|$ is large enough that direct simulation is cumbersome but too small to apply the central limit theorem, the characteristic function
+	\begin{equation}
+		F(\omega\mid |s|)=E\left[\exp\left(i\omega n(A\setminus U)\right)\mid |s|\right] = E\left[\exp\left(i\omega n(s_j)\right)\right]^{|s|}
+	\end{equation}
+	can be estimated by simulation using a single vector of samples from the truncated lognormal distribution of $n(s_j)$. The inverse Fourier transform of the characteristic function yields the target density:
+	\begin{equation}
+		p(n(A\setminus U)\mid |s|)=\int_{-\infty}^\infty \exp(-i\omega n(A\setminus U))F(\omega\mid |s|)d\omega
+	\end{equation}
+\end{itemize}
+The product of the prior and likelihood can be normalized to yield $p(|s|\mid n(A\setminus U))$. Since $|s|$ is a discrete random variable, this distribution is categorical \textbf{cite Gelman} and a sample for $|s|$ can be generated using standard methods.
+
+\subsection{Sampling the sizes of the rural settlements given the number of rural settlements}
+Given $|s|$ and $n(A\setminus U)$, the distribution of the vector $\{n(s_j),j=1\ldots |s|-1\}$ is as follows.
+\begin{equation}
+	\begin{array}{r}
+		p(\{n(s_j),j=1\ldots |s|-1\}\mid|s|,n(A\setminus U))\propto p(n(A\setminus U)\mid\{n(s_j),j=1\ldots |s|-1\})\\\cdot\prod_{j=1}^{|s|-1}\textup{TLN}(n(s_j);\mu, V, \min_i n(U_i))\\\\
+		= \textup{TLN}\left(n(A\setminus U)-\sum_{j=1}^{|s|-1}n(s_j);\mu,V,\min_i n(U_i)\right)\prod_{j=1}^{|s|-1}\textup{TLN}(n(s_j);\mu, V, \min_i n(U_i)).
+	\end{array}
+\end{equation}
+This distribution can be sampled using an SIR strategy \textbf{cite Gelman} with the unconditional distribution as a proposal:
+\begin{enumerate}
+	\item Generate a large number of samples from the unconditional distribution of $\{n(s_j),j=1\ldots |s|-1\}$. Each element is iid with distribution $\textup{TLN}(\mu, V, \min_i n(U_i))$.
+	\item Weight each sample by $\textup{TLN}\left(n(A\setminus U)-\sum_{j=1}^{|s|-1}n(s_j);\mu,V,\min_i n(U_i)\right)$.
+	\item Draw several samples from the samples generated in step 1 with replacement. Each sample from step 1 is drawn with probability proportional to its weight.
+\end{enumerate}
+The samples produced can be considered approximate samples from the target distribution. The SIR strategy will fail if the given value of $n(A\setminus U)$ is unlikely given $|s|$, $\mu$, $V$ and $\min_i U_i$. However, since the given value of $n(A\setminus U)$ was drawn from its distribution conditional on these values, this will not usually be a major concern.
+
+% section sampling_from_the_target_distribution (end)
+
+\end{document}

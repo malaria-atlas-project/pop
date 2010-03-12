@@ -1,0 +1,49 @@
+\documentclass[a4paper]{article}
+\usepackage{fullpage}
+\usepackage{epsfig}
+\usepackage{pdfsync} 
+\usepackage{amsfonts}
+\usepackage{amsmath} 
+\begin{document}
+
+\title{Temporal error bars}
+\author{anand}
+\maketitle
+
+This is a quick-and-dirty way to put error bars on the temporally-projected GPW estimate $y$ of actual population $x$ for a particular administrative unit. Assumptions:
+\begin{itemize}
+   \item $x$ is projected to time $T$ based on a census at time $0$.
+   \item Actual population change per annum in the unit is $k_t$, so that $x_{t+1} = k_t x_t$. $k_t$ has a lognormal subjective distribution (this is a prior, but we have no data, so it will be a posterior also):
+   \[
+   \log k_t \sim \textup{N}(\mu_t, V_t). 
+   \]
+   We need to provide the distributional parameters $\mu_t$ and $V_t$ by applying the UN procedure pre- and post- 2005.
+   \item The population change per annum that the GRUMP people used to project the population is $\tilde k_t$, so that $y_{t+1} = \tilde k_t y_t$. $q_t$ has another lognormal subjective distribution:
+   \[
+   \log \tilde k_t \sim \textup{N}(\tilde \mu_t, \tilde V_t). 
+   \]
+   \item The GRUMP people started from the last known census, so $y_0 = x_0$.
+\end{itemize}
+
+Based on these assumptions, the following hold:
+\begin{eqnarray}
+   \log x_T | \log x_0 \sim \textup{N}(\log x_0 + \sum_t \mu_t, \sum_t V_t)\\   
+   \log y_T | \log x_0 \sim \textup{N}(\log x_0 + \sum_t \tilde \mu_t, \sum_t \tilde V_t)\\
+   \log x_0 | \log y_T \sim \textup{N}(\log y_T - \sum_t \tilde \mu_t, \sum_t \tilde V_t)\\
+   \log x_T | \log y_T \sim \textup{N}(\log x_0 + \sum_t \mu_t - \tilde \mu_t, \sum_t \tilde V_t + V_t) 
+\end{eqnarray}
+The last line would give us a distribution for the true population $x_T$ given the GRUMP estimate $y_T$.
+
+Notes on the priors:
+\begin{itemize}
+   \item Writing $k_t = 1 + r_t$, if the population growth rate $r_t$ is relatively small, the following prior on $r_t$ will induce the lognormal prior on $k_t$ given above:
+   \[
+   r_t \sim \textup{N}(\mu_t, V_t) 
+   \]
+   So if we feel better specifying priors for $r_t$, we can usually get away with it.
+   \item We can make $\mu_t = \tilde \mu_t$, $V_t = \tilde V_t$ if we have reason to do so.
+\end{itemize}
+
+
+
+\end{document}
